@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>ABC Corp. All-in-One Portal</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <style>
+        /* --- This is the ONLY custom CSS --- */
+        
+        /* 1. Page switching logic */
+        .page { display: none; width: 100%; }
+        .page.active { display: block; }
+
+        /* 2. Your "Fixed Scrollable Box" for HR Columns */
+        .kanban-column {
+            max-height: 70vh; /* 70% of the screen height */
+            overflow-y: auto;
+        }
+        
+        /* 3. Your "Fixed Scrollable Box" for Employee Result */
+        #resultArea {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        /* 4. Visual feedback for dragging */
+        .task.is-dragging {
+            opacity: 0.5;
+            border: 2px dashed var(--bs-primary);
+        }
+        /* --- End of custom CSS --- */
+    </style>
+</head>
+<body>
+
+    <div id="login-page" class="page active">
+        <div class="d-flex align-items-center justify-content-center vh-100">
+            <div class="card shadow" style="width: 100%; max-width: 450px;">
+                <div class="card-body p-4 p-md-5">
+                    <h1 class="h3 mb-3 fw-normal text-center">Welcome to ABC Corp.</h1>
+                    <p class="text-body-secondary text-center">Please select your portal.</p>
+                    <div class="d-grid gap-2 mb-4">
+                        <button id="empBtn" class="btn btn-primary btn-lg"><i class="bi bi-person"></i> Employee Login</button>
+                    </div>
+                    <hr>
+                    <form id="hr-login-form" method="POST">
+                        <h2 class="h4 mb-3 fw-normal text-center">HR Admin Portal</h2>
+                        <div class="form-floating mb-3">
+                            <input type="password" class="form-control" id="hr-password-input" placeholder="Password" required>
+                            <label for="hr-password-input">Enter HR Password</label>
+                        </div>
+                        <button id="hrBtn" class="btn btn-danger btn-lg w-100" type="submit"><i class="bi bi-shield-lock"></i> HR Login</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="hr-page" class="page container-fluid mt-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="back-btn text-secondary" data-target="login-page"><i class="bi bi-arrow-left"></i> Back to Login</span>
+            <h1 class="h2 mb-0">HR Payroll Dashboard</h1>
+            <span style="width: 120px;"></span> </div>
+        
+        <div class="row text-center mb-3 g-3">
+            <div class="col-md-4">
+                <div class="card bg-primary-subtle text-primary-emphasis">
+                    <div class="card-body">
+                        <h6 class="card-title text-uppercase">Total Employees</h6>
+                        <h2 class="display-4 fw-bold" id="stat-total">0</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-warning-subtle text-warning-emphasis">
+                    <div class="card-body">
+                        <h6 class="card-title text-uppercase">To Be Reviewed</h6>
+                        <h2 class="display-4 fw-bold" id="stat-reviewed">0</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-success-subtle text-success-emphasis">
+                    <div class="card-body">
+                        <h6 class="card-title text-uppercase">Approved</h6>
+                        <h2 class="display-4 fw-bold" id="stat-approved">0</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <input type="text" class="form-control form-control-lg mb-3" id="hr-search-bar" placeholder="&#128269; Search by Employee ID...">
+
+        <div class="row kanban-board">
+            <div class="col-md-4">
+                <div class="card shadow-sm">
+                    <div class="card-header text-center h5">To Be Reviewed</div>
+                    <div class="card-body kanban-column" id="todo-col"></div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm">
+                    <div class="card-header text-center h5">Flagged for Discrepancy</div>
+                    <div class="card-body kanban-column" id="inprogress-col"></div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm">
+                    <div class="card-header text-center h5">Approved for Payment</div>
+                    <div class="card-body kanban-column" id="done-col"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="trash-bin" class="p-4 rounded mt-3 text-center h5">
+            <i class="bi bi-trash3"></i> Drag here to remove from batch
+        </div>
+    </div>
+
+    <div id="employee-page" class="page">
+        <div class="d-flex align-items-center justify-content-center vh-100">
+            <div class="card shadow" style="width: 100%; max-width: 550px;">
+                <div class="card-body p-4 p-md-5">
+                    <span class="back-btn text-secondary float-start" data-target="login-page"><i class="bi bi-arrow-left"></i> Back</span>
+                    <h1 class="h3 mb-3 fw-normal text-center">Employee Portal</h1>
+                    <p class="text-body-secondary text-center">Enter your ID to view attendance and salary status.</p>
+                    <div class="input-group mb-3">
+                        <input type="number" class="form-control" id="empIdInput" placeholder="Enter Employee ID...">
+                        <button class="btn btn-primary" type="button" id="searchBtn"><i class="bi bi-search"></i> Search</button>
+                    </div>
+                    <div id="resultArea" class="bg-tertiary-subtle border rounded p-3">
+                        <p class="text-body-secondary text-center">Please enter your ID to see your summary.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // --- 0. GLOBAL CONFIG & URL ---
+        const googleSheetUrl = 'https://raw.githubusercontent.com/SYED-2102/csv-employee-data/refs/heads/main/ABC_emp%20-%20Employee%20Attendance.csv';
+        let hrDataLoaded = false;
+
+        // --- 1. PAGE NAVIGATION LOGIC ---
+        const allPages = document.querySelectorAll('.page');
+        function showPage(pageId) {
+            allPages.forEach(page => {
+                page.classList.remove('active');
+            });
+            document.getElementById(pageId).classList.add('active');
+        }
+
+        // --- 2. LOGIN PAGE LOGIC ---
+        const correctPassword = "admin123";
+        const hrLoginForm = document.getElementById('hr-login-form');
+        const hrPasswordInput = document.getElementById('hr-password-input');
+
+        hrLoginForm.addEventListener('submit', (e) => {
+            e.preventDefault(); 
+            const passwordAttempt = hrPasswordInput.value;
+            if (passwordAttempt === correctPassword) {
+                showPage('hr-page');
+                if (!hrDataLoaded) {
+                    hr_loadEmployeeData();
+                    hrDataLoaded = true;
+                }
+                hrPasswordInput.value = "";
+            } else {
+                alert('Incorrect Password!');
+                hrPasswordInput.value = "";
+            }
+        });
+
+        document.getElementById('empBtn').addEventListener('click', () => {
+            showPage('employee-page');
+        });
+
+        document.querySelectorAll('.back-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                showPage(e.currentTarget.dataset.target);
+            });
+        });
+
+        
+        // --- 3. HR DASHBOARD SCRIPT ---
+        
+        // --- FUNCTION TO RECOUNT CARDS (THE FIX) ---
+        function hr_updateStatBoxes() {
+            // This function does NOT animate, it just updates the numbers instantly.
+            const reviewedCount = document.querySelectorAll('#todo-col .task').length;
+            const flaggedCount = document.querySelectorAll('#inprogress-col .task').length;
+            const approvedCount = document.querySelectorAll('#done-col .task').length;
+            const totalCount = reviewedCount + flaggedCount + approvedCount;
+
+            document.getElementById('stat-total').innerText = totalCount;
+            // The "To Be Reviewed" stat box should show both To-Do and Flagged
+            document.getElementById('stat-reviewed').innerText = reviewedCount + flaggedCount;
+            document.getElementById('stat-approved').innerText = approvedCount;
+        }
+
+        const hrColumns = document.querySelectorAll('#hr-page .kanban-column');
+        const hrTrashBin = document.getElementById('trash-bin');
+        const hrSearchBar = document.getElementById('hr-search-bar');
+        
+        // Search Bar Logic
+        hrSearchBar.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const allTasks = document.querySelectorAll('#hr-page .task');
+            
+            allTasks.forEach(task => {
+                const employeeId = task.dataset.employeeId.toLowerCase();
+                if (employeeId.includes(searchTerm)) {
+                    task.style.display = 'block';
+                } else {
+                    task.style.display = 'none';
+                }
+            });
+        });
+
+        // --- ANIMATION FUNCTION ---
+        function animateCountUp(element, to) {
+            let from = 0;
+            const duration = 1000;
+            const steps = 50;
+            const stepDuration = duration / steps;
+            const increment = (to - from) / steps;
+            let current = from;
+            const interval = setInterval(() => {
+                current += increment;
+                if (current >= to) {
+                    element.innerText = to;
+                    clearInterval(interval);
+                } else {
+                    element.innerText = Math.ceil(current);
+                }
+            }, stepDuration);
+        }
+
+        // --- TOAST FUNCTION ---
+        const toastContainer = document.querySelector('.toast-container');
+        function showToast(message, type = 'success') {
+            let icon, title;
+            if (type === 'success') {
+                icon = '<i class="bi bi-check-circle-fill text-success me-2"></i>';
+                title = 'Success';
+            } else if (type === 'danger') {
+                icon = '<i class="bi bi-x-circle-fill text-danger me-2"></i>';
+                title = 'Removed';
+            } else { // warning
+                icon = '<i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>';
+                title = 'Flagged';
+            }
+            const toastId = 'toast-' + Date.now();
+            const toastHTML = `
+                <div class="toast" role="alert" id="${toastId}">
+                    <div class="toast-header">
+                        ${icon}
+                        <strong class="me-auto">${title}</strong>
+                        <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+                    </div>
+                    <div class="toast-body">${message}</div>
+                </div>
+            `;
+            toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+            const toastElement = document.getElementById(toastId);
+            const toast = new bootstrap.Toast(toastElement, { delay: 3000 });
+            toast.show();
+            toastElement.addEventListener('hidden.bs.toast', () => toastElement.remove());
+        }
+
+        // --- MODIFIED: HR LOAD DATA ---
+        async function hr_loadEmployeeData() {
+            const reviewColumn = document.getElementById('todo-col');
+            reviewColumn.innerHTML = '<div class="spinner-border spinner-border-sm" role="status"></div> Loading...';
+            try {
+                const response = await fetch(googleSheetUrl);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const csvText = await response.text();
+                const employees = hr_parseCsv(csvText);
+                
+                // Clear all columns before loading
+                hrColumns.forEach(col => {
+                    col.innerHTML = '';
+                });
+
+                const approvedList = hr_getApprovedList();
+                let approvedCount = 0;
+
+                employees.forEach(emp => {
+                    const isApproved = approvedList.includes(emp.id);
+                    if (isApproved) {
+                        approvedCount++;
+                    }
+                    // Pass 'isApproved' to place the card in the correct column
+                    hr_createEmployeeCard(emp, isApproved); 
+                });
+
+                // Update and animate the stat boxes
+                const total = employees.length;
+                const reviewed = total - approvedCount;
+                animateCountUp(document.getElementById('stat-total'), total);
+                animateCountUp(document.getElementById('stat-reviewed'), reviewed);
+                animateCountUp(document.getElementById('stat-approved'), approvedCount);
+
+            } catch (error) {
+                reviewColumn.innerHTML = `<p class="text-danger text-center"><strong>Error:</strong> Failed to load data.</p>`;
+            }
+        }
+        
+        function hr_parseCsv(csvText) {
+            const employees = [];
+            const lines = csvText.split('\n').slice(7);
+            if (lines.length === 0) return employees;
+            
+            const headers = lines[0].trim().split(',');
+            const [empIdIndex, nameIndex, workingDaysIndex, payableIndex] = [
+                headers.indexOf('Emp. ID'), headers.indexOf('Employee Name'),
+                headers.indexOf('WorkingDays'), headers.indexOf('DaysPayable')
+            ];
+
+            if (empIdIndex === -1 || nameIndex === -1 || workingDaysIndex === -1 || payableIndex === -1) {
+                return employees; // Stop if headers are missing
+            }
+            
+            // Go through all lines *except* the header
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue; // Skip empty lines
+                
+                const data = lines[i].trim().split(',');
+                employees.push({
+                    id: parseInt(data[empIdIndex]),
+                    name: data[nameIndex],
+                    workingDays: Number(data[workingDaysIndex]),
+                    daysPayable: Number(data[payableIndex])
+                });
+            }
+            return employees;
+        }
+
+        // --- MODIFIED: HR CREATE CARD ---
+        function hr_createEmployeeCard(employee, isApproved) {
+            // Create a Bootstrap card for the task
+            const task = document.createElement('div');
+            task.className = 'card task mb-2 shadow-sm'; // Use Bootstrap card classes
+            task.setAttribute('draggable', 'true');
+            task.dataset.employeeId = employee.id;
+            
+            const deducted = -(employee.daysPayable - employee.workingDays) * 1500;
+            const deductionClass = deducted < 0 ? 'deduction-negative' : 'deduction-positive';
+            
+            // Use card-body for padding
+            task.innerHTML = `
+                <div class="card-body">
+                    <h5 class="card-title h6">${employee.name}</h5>
+                    <p class="card-text small mb-1">
+                        <strong>ID:</strong> ${employee.id}<br>
+                        <strong>Working:</strong> ${employee.workingDays} | <strong>Payable:</strong> ${employee.daysPayable}
+                    </p>
+                    <p class="card-text ${deductionClass} mb-0">Deduction: ${deducted}</p>
+                </div>
+            `;
+            hr_addDragListeners(task);
+            
+            // Place in the correct column
+            if (isApproved) {
+                document.getElementById('done-col').appendChild(task);
+            } else {
+                document.getElementById('todo-col').appendChild(task);
+            }
+        }
+
+        function hr_addDragListeners(task) {
+            task.addEventListener('dragstart', () => {
+                task.classList.add('is-dragging');
+            });
+            task.addEventListener('dragend', () => {
+                task.classList.remove('is-dragging');
+            });
+        }
+
+        // --- MODIFIED: HR DROP LISTENERS (with Fix) ---
+        hrColumns.forEach(column => {
+            column.addEventListener('dragover', (e) => e.preventDefault());
+            column.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const draggingTask = document.querySelector('#hr-page .is-dragging');
+                if (draggingTask) {
+                    column.appendChild(draggingTask); // Move the card
+                    const employeeId = parseInt(draggingTask.dataset.employeeId);
+                    
+                    if (column.id === 'done-col') {
+                        hr_markSalaryAsProcessed(employeeId);
+                        showToast(`Employee #${employeeId} salary approved.`, 'success');
+                    } else {
+                        hr_unmarkSalaryAsProcessed(employeeId);
+                        if (column.id === 'inprogress-col') {
+                            showToast(`Employee #${employeeId} flagged for review.`, 'warning');
+                        }
+                    }
+                    hr_updateStatBoxes(); // <-- THE FIX
+                }
+            });
+        });
+
+        hrTrashBin.addEventListener('dragover', (e) => { e.preventDefault(); hrTrashBin.classList.add('trash-over'); });
+        hrTrashBin.addEventListener('dragleave', () => hrTrashBin.classList.remove('trash-over'));
+        hrTrashBin.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const draggingTask = document.querySelector('#hr-page .is-dragging');
+            if (draggingTask) {
+                const employeeId = parseInt(draggingTask.dataset.employeeId);
+                hr_unmarkSalaryAsProcessed(employeeId);
+                draggingTask.remove();
+                showToast(`Employee #${employeeId} removed from batch.`, 'danger');
+                
+                hr_updateStatBoxes(); // <-- THE FIX
+            }
+            hrTrashBin.classList.remove('trash-over');
+        });
+
+        function hr_getApprovedList() { return JSON.parse(localStorage.getItem('payrollApproved')) || []; }
+        function hr_markSalaryAsProcessed(id) {
+            let list = hr_getApprovedList();
+            if (!list.includes(id)) {
+                list.push(id);
+                localStorage.setItem('payrollApproved', JSON.stringify(list));
+            }
+        }
+        function hr_unmarkSalaryAsProcessed(id) {
+            let list = hr_getApprovedList().filter(empId => empId !== id);
+            localStorage.setItem('payrollApproved', JSON.stringify(list));
+        }
+
+        
+        // --- 4. EMPLOYEE PORTAL SCRIPT ---
+        const empIdInput = document.getElementById('empIdInput');
+        const empSearchBtn = document.getElementById('searchBtn');
+        const empResultArea = document.getElementById('resultArea');
+        empSearchBtn.addEventListener('click', emp_findEmployeeData);
+        empIdInput.addEventListener('keyup', (event) => { if (event.key === 'Enter') emp_findEmployeeData(); });
+
+        async function emp_findEmployeeData() {
+            const empIdToFind = parseInt(empIdInput.value);
+            if (isNaN(empIdToFind)) { emp_displayError("Please enter a valid Employee ID."); return; }
+            empResultArea.className = 'loading p-3';
+            empResultArea.innerHTML = '<div class="spinner-border spinner-border-sm" role="status"></div> Searching...';
+            try {
+                const response = await fetch(googleSheetUrl);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const csvText = await response.text(); 
+                const employee = emp_parseCsvForEmployee(csvText, empIdToFind);
+                if (employee) emp_displaySuccess(employee);
+                else emp_displayError(`No data found for Employee ID: ${empIdToFind}.`);
+            } catch (error) {
+                emp_displayError("Failed to fetch attendance data.");
+            }
+        }
+
+        function emp_parseCsvForEmployee(csvText, empId) {
+            const lines = csvText.split('\n').slice(7);
+            if (lines.length === 0) return null;
+            
+            const headers = lines[0].trim().split(',');
+            const [empIdIndex, nameIndex, workingDaysIndex, payableIndex] = [
+                headers.indexOf('Emp. ID'), headers.indexOf('Employee Name'),
+                headers.indexOf('WorkingDays'), headers.indexOf('DaysPayable')
+            ];
+
+            if (empIdIndex === -1 || workingDaysIndex === -1 || payableIndex === -1) { return null; }
+
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                const data = lines[i].trim().split(',');
+                const currentEmpId = parseInt(data[empIdIndex]);
+                if (currentEmpId === empId) {
+                    return {
+                        id: currentEmpId, name: data[nameIndex],
+                        workingDays: Number(data[workingDaysIndex]), daysPayable: Number(data[payableIndex])
+                    };
+                }
+            }
+            return null;
+        }
+
+        function emp_checkSalaryStatus(id) {
+            const list = JSON.parse(localStorage.getItem('payrollApproved')) || [];
+            if (list.includes(id)) return '<span class="status-processed"><i class="bi bi-check-circle-fill"></i> Processed</span>';
+            else return '<span class="status-pending"><i class="bi bi-hourglass-split"></i> Pending Review</span>';
+        }
+
+        function emp_displaySuccess(employee) {
+            empResultArea.className = 'p-3';
+            const salaryStatus = emp_checkSalaryStatus(employee.id);
+            const deducted = -(employee.daysPayable - employee.workingDays) * 1500;
+            const extrahours = deducted / 150;
+            
+            // Using Bootstrap list-group for a cleaner look
+            empResultArea.innerHTML = `
+                <h5 class="mb-3">Summary for: ${employee.name}</h5>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent">
+                        <strong>Salary Status:</strong> ${salaryStatus}
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent">
+                        <span>Total Working Days:</span>
+                        <span class="badge bg-primary rounded-pill">${employee.workingDays}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent">
+                        <span>Total Payable Days:</span>
+                        <span class="badge bg-primary rounded-pill">${employee.daysPayable}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent">
+                        <span>Total amount_deducted:</span>
+                        <span class="badge ${deducted < 0 ? 'bg-danger' : 'bg-success'} rounded-pill">${deducted} rs</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent">
+                        <span>Total Extra Hours work:</span>
+                        <span class="badge bg-secondary rounded-pill">${extrahours} hrs</span>
+                    </li>
+                </ul>
+                <p class="text-body-secondary mt-3 small">Note: For any discrepancies, please contact HR.</p>
+            `;
+        }
+
+        function emp_displayError(message) {
+            empResultArea.className = 'alert alert-danger';
+            empResultArea.innerHTML = message;
+        }
+
+    </script>
+</body>
+</html>
