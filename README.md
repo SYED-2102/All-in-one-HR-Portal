@@ -1,2 +1,15 @@
 # All-in-one-HR-Portal
-HR Payroll Dashboard: Built a responsive, interactive web application using JavaScript and Bootstrap 5. Features include a custom CSV parser, Kanban-style drag-and-drop workflow, real-time search filtering, and localStorage state management to simulate a multi-user environment
+
+Project: HR Payroll Approval Dashboard
+Tech: JavaScript (ES6+), Bootstrap 5, HTML5/CSS3, Fetch API, LocalStorage.
+ * Developed a responsive Single Page Application (SPA) simulating a payroll workflow with dual-user authentication (HR/Employee).
+ * Engineered a custom CSV parser to fetch and render external datasets into interactive dynamic DOM elements.
+ * Implemented the HTML5 Drag and Drop API for a Kanban-style approval system and LocalStorage for state persistence.
+ * Designed a dark-mode UI with Bootstrap 5, featuring real-time search filtering, animated statistics, and interactive modals.
+Key Skills Demonstrated:
+ * Client-Side Scripting
+ * Asynchronous Data Handling (Fetch/Async/Await)
+ * State Management
+ * UI/UX Design (Responsive/Dark Mode)
+ * Data Visualization
+
