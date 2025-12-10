@@ -14,4 +14,5 @@ Key Skills Demonstrated:
  * UI/UX Design (Responsive/Dark Mode)
  * Data Visualization
  * (enter password 'admin123' for hr portal)
+ * for viewing employees attendance enter numbers from 1 to 50
 
